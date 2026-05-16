@@ -1,62 +1,30 @@
 local Map = {}
 Map.__index = Map
 
-local TILE = 48
-
--- 0 = camino, 1 = terreno (donde poner torres)
-local layout = {
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
-    {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-}
-
--- Waypoints del camino (centro de cada celda del path)
-local waypoints = {
-    {x=0,      y=2*TILE + TILE/2},
-    {x=10*TILE + TILE/2, y=2*TILE + TILE/2},
-    {x=10*TILE + TILE/2, y=5*TILE + TILE/2},
-    {x=21*TILE, y=5*TILE + TILE/2},
-    {x=20*TILE + TILE/2, y=8*TILE + TILE/2},
-    {x=2*TILE + TILE/2,  y=8*TILE + TILE/2},
-    {x=2*TILE + TILE/2,  y=11*TILE + TILE/2},
-    {x=21*TILE, y=11*TILE + TILE/2},
-}
-
-function Map.new()
-    local self = setmetatable({}, Map)
-    self.layout = layout
-    self.waypoints = waypoints
-    self.tileSize = TILE
-    self.cols = #layout[1]
-    self.rows = #layout
+function Map.new(levelData)
+    local self  = setmetatable({}, Map)
+    self.layout   = levelData.layout
+    self.waypoints= levelData.waypoints
+    self.tileSize = 48
+    self.cols     = levelData.cols
+    self.rows     = levelData.rows
+    self.tileGrass= levelData.tileGrass or {0.20, 0.50, 0.20}
+    self.tilePath = levelData.tilePath  or {0.70, 0.60, 0.42}
     return self
 end
 
 function Map:draw()
+    local ts = self.tileSize
     for row = 1, self.rows do
         for col = 1, self.cols do
-            local tile = self.layout[row][col]
-            local x = (col - 1) * self.tileSize
-            local y = (row - 1) * self.tileSize
-            if tile == 1 then
-                love.graphics.setColor(0.2, 0.5, 0.2)
+            local x = (col - 1) * ts
+            local y = (row - 1) * ts
+            if self.layout[row][col] == 1 then
+                love.graphics.setColor(self.tileGrass)
             else
-                love.graphics.setColor(0.7, 0.6, 0.4)
+                love.graphics.setColor(self.tilePath)
             end
-            love.graphics.rectangle("fill", x, y, self.tileSize - 1, self.tileSize - 1)
+            love.graphics.rectangle("fill", x, y, ts - 1, ts - 1)
         end
     end
 end
