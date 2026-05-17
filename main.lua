@@ -30,6 +30,10 @@ local currentSlot, currentLevel, currentSlotData
 
 local waveTimer        = 0
 local awaitingNextWave = false
+local gamePaused       = false
+
+-- Pause button (top-left of game area)
+local PAUSE_X, PAUSE_Y, PAUSE_SZ = 8, 8, 40
 
 local fSmall, fMedium, fHuge
 
@@ -91,6 +95,118 @@ local function resetGlove()
     movingTower = nil
 end
 
+local function drawPauseBtn()
+    local mx, my = love.mouse.getPosition()
+    local hov = mx >= PAUSE_X and mx <= PAUSE_X+PAUSE_SZ
+              and my >= PAUSE_Y and my <= PAUSE_Y+PAUSE_SZ
+    love.graphics.setColor(hov and {0.25,0.32,0.50} or {0.14,0.16,0.24})
+    love.graphics.rectangle("fill", PAUSE_X, PAUSE_Y, PAUSE_SZ, PAUSE_SZ, 7, 7)
+    love.graphics.setColor(hov and {0.70,0.58,0.18} or {0.35,0.38,0.55})
+    love.graphics.rectangle("line", PAUSE_X, PAUSE_Y, PAUSE_SZ, PAUSE_SZ, 7, 7)
+    -- Pause icon (two vertical bars)
+    love.graphics.setColor(hov and {1,0.92,0.70} or {0.65,0.68,0.85})
+    local cx = PAUSE_X + PAUSE_SZ/2
+    local cy = PAUSE_Y + PAUSE_SZ/2
+    love.graphics.rectangle("fill", cx-9, cy-10, 7, 20, 2, 2)
+    love.graphics.rectangle("fill", cx+2,  cy-10, 7, 20, 2, 2)
+end
+
+local CONTROLS = {
+    {"Click mapa",        "Colocar torre seleccionada"},
+    {"Click torre",       "Ver mejoras / vender"},
+    {"Espacio",           "Avanzar a la siguiente ola"},
+    {"R",                 "Reiniciar nivel actual"},
+    {"M",                 "Volver al mapa de niveles"},
+    {"Esc",               "Pausar / Cancelar seleccion"},
+    {"Guante (boton)",    "Mover una torre (CD 30s)"},
+}
+
+local function drawPauseOverlay()
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.72)
+    love.graphics.rectangle("fill", 0, 0, GAME_W, 768)
+
+    -- Panel
+    local pw, ph = 480, 420
+    local px = (GAME_W - pw) / 2
+    local py = (768  - ph) / 2
+    love.graphics.setColor(0.08, 0.10, 0.16, 0.97)
+    love.graphics.rectangle("fill", px, py, pw, ph, 12, 12)
+    love.graphics.setColor(0.40, 0.36, 0.14)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, pw, ph, 12, 12)
+    love.graphics.setLineWidth(1)
+
+    -- Title
+    love.graphics.setFont(fMedium)
+    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.printf("PAUSA", px, py + 18, pw, "center")
+
+    -- Divider
+    love.graphics.setColor(0.30, 0.28, 0.12)
+    love.graphics.rectangle("fill", px+20, py+46, pw-40, 1)
+
+    -- Controls list
+    love.graphics.setFont(fSmall)
+    for i, row in ipairs(CONTROLS) do
+        local ry = py + 56 + (i-1)*34
+        love.graphics.setColor(0.90, 0.80, 0.22)
+        love.graphics.print(row[1], px + 28, ry)
+        love.graphics.setColor(0.75, 0.75, 0.75)
+        love.graphics.print(row[2], px + 170, ry)
+    end
+
+    -- Divider
+    local divY = py + 56 + #CONTROLS * 34 + 6
+    love.graphics.setColor(0.30, 0.28, 0.12)
+    love.graphics.rectangle("fill", px+20, divY, pw-40, 1)
+
+    -- Buttons: Reanudar / Reiniciar / Menu
+    local mx, my = love.mouse.getPosition()
+    local btns = {
+        {label="Reanudar",  id="resume"},
+        {label="Reiniciar", id="restart"},
+        {label="Al mapa",   id="menu"},
+    }
+    local bw, bh, bgap = 126, 34, 14
+    local totalW = #btns * bw + (#btns-1)*bgap
+    local bstartX = px + (pw - totalW)/2
+    local by = divY + 14
+    for i, btn in ipairs(btns) do
+        local bx = bstartX + (i-1)*(bw+bgap)
+        local hov = mx >= bx and mx <= bx+bw and my >= by and my <= by+bh
+        love.graphics.setColor(hov and {0.22,0.38,0.22} or {0.12,0.20,0.14})
+        love.graphics.rectangle("fill", bx, by, bw, bh, 6, 6)
+        love.graphics.setColor(hov and {0.45,0.80,0.45} or {0.25,0.45,0.28})
+        love.graphics.rectangle("line", bx, by, bw, bh, 6, 6)
+        love.graphics.setFont(fSmall)
+        love.graphics.setColor(hov and {0.90,1.0,0.90} or {0.70,0.90,0.70})
+        love.graphics.printf(btn.label, bx, by+10, bw, "center")
+    end
+end
+
+-- Returns "resume"|"restart"|"menu"|nil when pause overlay is clicked
+local function clickPauseOverlay(mx, my)
+    local pw, ph = 480, 420
+    local px = (GAME_W - pw) / 2
+    local py = (768  - ph) / 2
+    local divY = py + 56 + #CONTROLS * 34 + 6
+    local bw, bh, bgap = 126, 34, 14
+    local totalW = 3*bw + 2*bgap
+    local bstartX = px + (pw - totalW)/2
+    local by = divY + 14
+    local ids = {"resume","restart","menu"}
+    for i, id in ipairs(ids) do
+        local bx = bstartX + (i-1)*(bw+bgap)
+        if mx >= bx and mx <= bx+bw and my >= by and my <= by+bh then
+            return id
+        end
+    end
+    -- Click anywhere else on overlay = resume
+    if mx >= px and mx <= px+pw and my >= py and my <= py+ph then return nil end
+    return "resume"
+end
+
 local function initGame(levelData)
     map     = Map.new(levelData)
     wave    = Wave.new(levelData.waypoints, levelData.waves)
@@ -142,6 +258,7 @@ end
 function love.update(dt)
     if gameState ~= "game" then return end
     if gameOver or victory     then return end
+    if gamePaused              then return end
 
     wave:update(dt, enemies)
 
@@ -204,44 +321,47 @@ function love.draw()
 
     ui:draw(gold, lives, wave.waveIndex, wave.maxWaves)
 
-    -- Next-wave indicator at spawn point
-    local sp = map.waypoints[1]
-    local sx = math.max(sp.x + 4, 4)
-    local sy = sp.y
+    -- Next-wave indicator — fixed bottom-center, never overlaps enemies
+    local BX = math.floor((GAME_W - 290) / 2)
+    local BY = 726
     if awaitingNextWave then
-        local secs    = math.ceil(waveTimer)
+        local secs = math.ceil(waveTimer)
         love.graphics.setFont(fMedium)
-        love.graphics.setColor(0, 0, 0, 0.65)
-        love.graphics.rectangle("fill", sx, sy-22, 270, 30, 6, 6)
+        love.graphics.setColor(0, 0, 0, 0.68)
+        love.graphics.rectangle("fill", BX, BY, 290, 30, 6, 6)
         love.graphics.setColor(1.0, 0.85, 0.10)
-        love.graphics.print("Ola " .. (wave.waveIndex+1) .. " en " .. secs .. "s  [Espacio]", sx+8, sy-18)
-        love.graphics.setFont(fSmall)
-
-        -- Preview of next wave
+        love.graphics.print("Ola " .. (wave.waveIndex+1) .. " en " .. secs .. "s", BX+10, BY+6)
         local preview = wave:nextWavePreview()
         if preview then
             local kinds = {}
             for _, g in ipairs(preview) do
                 table.insert(kinds, g.count .. " " .. g.kind)
             end
-            love.graphics.setColor(0, 0, 0, 0.55)
-            love.graphics.rectangle("fill", sx, sy+14, 270, 22, 4, 4)
-            love.graphics.setColor(0.70, 0.70, 0.70)
-            love.graphics.print("  " .. table.concat(kinds, " + "), sx+4, sy+17)
             love.graphics.setFont(fSmall)
+            love.graphics.setColor(0, 0, 0, 0.58)
+            love.graphics.rectangle("fill", BX, BY+34, 290, 20, 4, 4)
+            love.graphics.setColor(0.70, 0.70, 0.70)
+            love.graphics.print("  " .. table.concat(kinds, " + "), BX+6, BY+37)
         end
+        love.graphics.setFont(fSmall)
     elseif wave.waveIndex == 0 and not wave.active then
         love.graphics.setFont(fMedium)
-        love.graphics.setColor(0, 0, 0, 0.65)
-        love.graphics.rectangle("fill", sx, sy-22, 290, 30, 6, 6)
+        love.graphics.setColor(0, 0, 0, 0.68)
+        love.graphics.rectangle("fill", BX, BY, 290, 30, 6, 6)
         love.graphics.setColor(0.40, 1.00, 0.40)
-        love.graphics.print("[Espacio] Iniciar primera ola", sx+8, sy-18)
+        love.graphics.print("Pulsa Espacio para iniciar", BX+10, BY+6)
         love.graphics.setFont(fSmall)
     end
 
-    -- Glove button (top-right of game area)
+    -- Pause / Glove buttons (only when game is active)
     if not gameOver and not victory then
+        drawPauseBtn()
         drawGloveBtn()
+    end
+
+    -- Pause overlay
+    if gamePaused then
+        drawPauseOverlay()
     end
 
     -- Glove mode overlays
@@ -354,6 +474,27 @@ function love.mousepressed(x, y, button)
     -- ── Game ──────────────────────────────────────────────────────────────
     if gameOver or victory then return end
 
+    -- Pause overlay intercepts all clicks when active
+    if gamePaused then
+        local action = clickPauseOverlay(x, y)
+        if action == "resume" or action == nil then
+            gamePaused = false
+        elseif action == "restart" then
+            gamePaused = false
+            initGame(Levels[currentLevel])
+        elseif action == "menu" then
+            gamePaused = false
+            toLevelMap(currentSlot)
+        end
+        return
+    end
+
+    -- Pause button click
+    if x >= PAUSE_X and x <= PAUSE_X+PAUSE_SZ and y >= PAUSE_Y and y <= PAUSE_Y+PAUSE_SZ then
+        gamePaused = true
+        return
+    end
+
     -- Glove button click
     if x >= GLOVE_X and x <= GLOVE_X+GLOVE_SZ and y >= GLOVE_Y and y <= GLOVE_Y+GLOVE_SZ then
         if gloveCooldown <= 0 then
@@ -382,6 +523,16 @@ function love.mousepressed(x, y, button)
                     movingTower.row = row
                     movingTower.x   = (col-1)*map.tileSize + map.tileSize/2
                     movingTower.y   = (row-1)*map.tileSize + map.tileSize/2
+                    if movingTower.warriors then
+                        for i, w in ipairs(movingTower.warriors) do
+                            local angle = (i-1)*(2*math.pi/3)
+                            w.homeX = movingTower.x + math.cos(angle)*15
+                            w.homeY = movingTower.y + math.sin(angle)*15
+                            if w.state == "idle" then
+                                w.x, w.y = w.homeX, w.homeY
+                            end
+                        end
+                    end
                     movingTower     = nil
                     gloveMode       = false
                     gloveCooldown   = GLOVE_CD
@@ -448,6 +599,11 @@ function love.keypressed(key)
         return
     end
 
+    if gamePaused then
+        if key == "escape" then gamePaused = false end
+        return
+    end
+
     if key == "r" then
         initGame(Levels[currentLevel])
     elseif key == "m" then
@@ -464,9 +620,11 @@ function love.keypressed(key)
     elseif key == "escape" then
         if gloveMode then
             resetGlove()
-        else
+        elseif ui.selectedTower or ui.selectedPlaced then
             ui.selectedTower  = nil
             ui.selectedPlaced = nil
+        elseif not gameOver and not victory then
+            gamePaused = true
         end
     end
 end

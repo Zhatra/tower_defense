@@ -2,9 +2,9 @@ local Enemy = {}
 Enemy.__index = Enemy
 
 local TYPES = {
-    basic = {hp=80,  speed=60,  armor=0.0, color={0.90,0.20,0.20}, reward=10, radius=10},
-    fast  = {hp=40,  speed=120, armor=0.0, color={0.90,0.70,0.10}, reward=15, radius=8},
-    tank  = {hp=300, speed=30,  armor=0.45,color={0.40,0.20,0.80}, reward=30, radius=14},
+    basic = {hp=80,  speed=60,  armor=0.0, color={0.90,0.20,0.20}, reward=10, radius=10, attack=8},
+    fast  = {hp=40,  speed=120, armor=0.0, color={0.90,0.70,0.10}, reward=15, radius=8,  attack=12},
+    tank  = {hp=300, speed=30,  armor=0.45,color={0.40,0.20,0.80}, reward=30, radius=14, attack=22},
 }
 
 function Enemy.new(kind, waypoints)
@@ -18,17 +18,32 @@ function Enemy.new(kind, waypoints)
     self.color     = t.color
     self.reward    = t.reward
     self.radius    = t.radius
-    self.waypoints = waypoints
+    self.attack    = t.attack
+    self.waypoints = Enemy._buildOffsetWaypoints(waypoints)
     self.wpIndex   = 2
-    self.x         = waypoints[1].x
-    self.y         = waypoints[1].y
+    self.x         = self.waypoints[1].x
+    self.y         = self.waypoints[1].y
     self.dead      = false
     self.reached   = false
     self.slowTimer = 0
     self.slowFactor= 1.0
     self.armorDebufTimer = 0
     self.armorDebufPct   = 0
+    self.engagedBy = nil
     return self
+end
+
+function Enemy._buildOffsetWaypoints(waypoints)
+    local out = {}
+    for i, wp in ipairs(waypoints) do
+        local ox, oy = 0, 0
+        if i > 1 and i < #waypoints then
+            ox = math.random(-10, 10)
+            oy = math.random(-10, 10)
+        end
+        table.insert(out, {x = wp.x + ox, y = wp.y + oy})
+    end
+    return out
 end
 
 function Enemy:applySlow(duration, factor)
@@ -47,6 +62,18 @@ end
 
 function Enemy:update(dt)
     if self.dead or self.reached then return end
+
+    -- Stop while a warrior has this enemy engaged (or is moving toward it)
+    if self.engagedBy then
+        local ws = self.engagedBy.state
+        if ws == "fighting" then
+            return
+        elseif ws ~= "moving" then
+            -- warrior lost interest (idle/respawning), free this enemy
+            self.engagedBy = nil
+        end
+        -- if ws == "moving": keep reservation, enemy keeps walking until warrior arrives
+    end
 
     if self.slowTimer > 0 then
         self.slowTimer = self.slowTimer - dt
@@ -88,21 +115,23 @@ function Enemy:takeDamage(amount, opts)
     if opts.instakillAt and (self.hp / self.maxHp) < opts.instakillAt then
         self.hp = 0
     end
-    if self.hp <= 0 then self.dead = true end
+    if self.hp <= 0 then
+        self.dead = true
+        if self.engagedBy then
+            self.engagedBy = nil
+        end
+    end
 end
 
 function Enemy:draw()
-    -- body
     love.graphics.setColor(self.color)
     love.graphics.circle("fill", self.x, self.y, self.radius)
 
-    -- slow tint overlay
     if self.slowTimer > 0 then
         love.graphics.setColor(0.4, 0.7, 1.0, 0.35)
         love.graphics.circle("fill", self.x, self.y, self.radius)
     end
 
-    -- health bar
     local bw = self.radius * 2
     local bx = self.x - self.radius
     local by = self.y - self.radius - 8

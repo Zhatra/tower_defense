@@ -3,7 +3,7 @@ local SlotSelect = {}
 SlotSelect.__index = SlotSelect
 
 local W, H = 1168, 768
-local MAX_LEVELS = 3
+local MAX_LEVELS = 10
 
 local function inRect(mx,my,x,y,w,h)
     return mx>=x and mx<=x+w and my>=y and my<=y+h
@@ -24,7 +24,7 @@ function SlotSelect:refresh()
     self.slots = Saves.loadAll()
 end
 
-local CARD_W, CARD_H = 320, 160
+local CARD_W, CARD_H = 320, 180
 local CARD_Y = 260
 
 local function cardX(i)
@@ -70,24 +70,26 @@ function SlotSelect:draw()
             love.graphics.setColor(1, 1, 1)
             love.graphics.print(done .. "/" .. MAX_LEVELS .. " niveles completados", cx+16, cy+44)
 
-            -- Level dots
+            -- Level dots — 2 rows of 5
             for lv = 1, MAX_LEVELS do
-                local dx = cx + 16 + (lv-1)*28
-                local dy = cy + 76
+                local col  = (lv - 1) % 5
+                local row  = math.floor((lv - 1) / 5)
+                local dotX = cx + 18 + col * 56
+                local dotY = cy + 68 + row * 28
                 if s.completed[lv] then
                     love.graphics.setColor(0.95, 0.78, 0.14)
                 else
                     love.graphics.setColor(0.25, 0.25, 0.35)
                 end
-                love.graphics.circle("fill", dx+10, dy+10, 10)
+                love.graphics.circle("fill", dotX + 9, dotY + 9, 9)
                 love.graphics.setColor(0, 0, 0, 0.5)
                 love.graphics.setFont(self.fonts.small)
-                love.graphics.printf(tostring(lv), dx, dy+3, 20, "center")
+                love.graphics.printf(tostring(lv), dotX, dotY + 2, 18, "center")
             end
 
             love.graphics.setFont(self.fonts.small)
             love.graphics.setColor(0.45, 0.45, 0.45)
-            love.graphics.print(s.date or "", cx+16, cy+114)
+            love.graphics.print(s.date or "", cx+16, cy+140)
 
             -- Delete button
             local dx2 = cx + CARD_W - 62
