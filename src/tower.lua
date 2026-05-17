@@ -483,14 +483,28 @@ function Tower:update(dt, enemies)
 end
 
 function Tower:_findTarget(enemies)
+    local best, bestProgress = nil, -math.huge
     for _, e in ipairs(enemies) do
         if not e.dead and not e.reached then
             local dx = e.x - self.x
             local dy = e.y - self.y
-            if math.sqrt(dx*dx + dy*dy) <= self.range then return e end
+            if math.sqrt(dx*dx + dy*dy) <= self.range then
+                local wp = e.waypoints[e.wpIndex]
+                local remDist = 0
+                if wp then
+                    local wx = wp.x - e.x
+                    local wy = wp.y - e.y
+                    remDist = math.sqrt(wx*wx + wy*wy)
+                end
+                -- Higher wpIndex = further along path; less remDist = further within segment.
+                local progress = e.wpIndex * 10000 - remDist
+                if progress > bestProgress then
+                    best, bestProgress = e, progress
+                end
+            end
         end
     end
-    return nil
+    return best
 end
 
 function Tower:draw(selected)

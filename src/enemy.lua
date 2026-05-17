@@ -2,9 +2,9 @@ local Enemy = {}
 Enemy.__index = Enemy
 
 local TYPES = {
-    basic = {hp=80,  speed=60,  armor=0.0, color={0.90,0.20,0.20}, reward=10, radius=10, attack=8},
-    fast  = {hp=40,  speed=120, armor=0.0, color={0.90,0.70,0.10}, reward=15, radius=8,  attack=12},
-    tank  = {hp=300, speed=30,  armor=0.45,color={0.40,0.20,0.80}, reward=30, radius=14, attack=22},
+    basic = {hp=120, speed=45,  armor=0.0, color={0.90,0.20,0.20}, reward=10, radius=10, attack=8},
+    fast  = {hp=60,  speed=90,  armor=0.0, color={0.90,0.70,0.10}, reward=15, radius=8,  attack=12},
+    tank  = {hp=450, speed=22,  armor=0.45,color={0.40,0.20,0.80}, reward=30, radius=14, attack=22},
 }
 
 function Enemy.new(kind, waypoints)
@@ -63,16 +63,15 @@ end
 function Enemy:update(dt)
     if self.dead or self.reached then return end
 
-    -- Stop while a warrior has this enemy engaged (or is moving toward it)
+    -- Stop as soon as a warrior locks on (moving toward) or is fighting
     if self.engagedBy then
         local ws = self.engagedBy.state
-        if ws == "fighting" then
+        if ws == "moving" or ws == "fighting" then
             return
-        elseif ws ~= "moving" then
+        else
             -- warrior lost interest (idle/respawning), free this enemy
             self.engagedBy = nil
         end
-        -- if ws == "moving": keep reservation, enemy keeps walking until warrior arrives
     end
 
     if self.slowTimer > 0 then

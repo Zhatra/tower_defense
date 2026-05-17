@@ -2,16 +2,20 @@ local Enemy = require("src.enemy")
 local Wave  = {}
 Wave.__index = Wave
 
+local ADVANCE_DELAY = 9  -- seconds after wave start before early advance is allowed
+
 function Wave.new(waypoints, waveDefs)
     local self = setmetatable({}, Wave)
-    self.waypoints   = waypoints
-    self.waveDefs    = waveDefs
-    self.waveIndex   = 0
-    self.groups      = {}
-    self.timer       = 0
-    self.active      = false
-    self.allSpawned  = false
-    self.maxWaves    = #waveDefs
+    self.waypoints    = waypoints
+    self.waveDefs     = waveDefs
+    self.waveIndex    = 0
+    self.groups       = {}
+    self.timer        = 0
+    self.active       = false
+    self.allSpawned   = false
+    self.maxWaves     = #waveDefs
+    self.advanceTimer = 0
+    self.canAdvance   = false
     return self
 end
 
@@ -29,13 +33,25 @@ function Wave:start()
             spawned  = 0,
         })
     end
-    self.active     = true
-    self.allSpawned = false
+    self.active       = true
+    self.allSpawned   = false
+    self.advanceTimer = 0
+    self.canAdvance   = false
     return true
 end
 
 function Wave:update(dt, enemies)
+    -- advanceTimer ticks for the full duration a wave is in progress
+    -- (active while spawning, or allSpawned while enemies still alive)
+    if self.waveIndex > 0 then
+        self.advanceTimer = self.advanceTimer + dt
+        if self.advanceTimer >= ADVANCE_DELAY then
+            self.canAdvance = true
+        end
+    end
+
     if not self.active then return end
+
     local allDone = true
     for _, g in ipairs(self.groups) do
         if g.spawned < g.count then

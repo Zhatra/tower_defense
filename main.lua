@@ -31,9 +31,13 @@ local currentSlot, currentLevel, currentSlotData
 local waveTimer        = 0
 local awaitingNextWave = false
 local gamePaused       = false
+local wavePreviewOpen  = false
 
 -- Pause button (top-left of game area)
 local PAUSE_X, PAUSE_Y, PAUSE_SZ = 8, 8, 40
+
+-- Skull (wave preview) button constants
+local SKULL_SZ = 34
 
 local fSmall, fMedium, fHuge
 
@@ -95,6 +99,140 @@ local function resetGlove()
     movingTower = nil
 end
 
+local function getSkullPos()
+    local sp = map.waypoints[1]
+    local bx, by
+    if sp.x <= 4 then
+        -- spawn desde la izquierda
+        bx = 4
+        by = math.max(4, math.min(math.floor(sp.y - SKULL_SZ/2), 768 - SKULL_SZ - 4))
+    elseif sp.y <= 4 then
+        -- spawn desde arriba
+        bx = math.max(4, math.min(math.floor(sp.x - SKULL_SZ/2), GAME_W - SKULL_SZ - 4))
+        by = 4
+    else
+        bx, by = 4, PAUSE_Y + PAUSE_SZ + 6
+    end
+    -- Evitar solapamiento con el boton de pausa
+    if bx < PAUSE_X + PAUSE_SZ + 4 and by < PAUSE_Y + PAUSE_SZ + 4 then
+        by = PAUSE_Y + PAUSE_SZ + 6
+    end
+    return bx, by
+end
+
+local function drawWaveSkullBtn(bx, by)
+    local sz = SKULL_SZ
+    local mx, my = love.mouse.getPosition()
+    local hov = mx>=bx and mx<=bx+sz and my>=by and my<=by+sz
+    local active = wavePreviewOpen
+
+    -- Fondo
+    if active then
+        love.graphics.setColor(0.30, 0.14, 0.06)
+    elseif hov then
+        love.graphics.setColor(0.22, 0.10, 0.04)
+    else
+        love.graphics.setColor(0.10, 0.06, 0.04)
+    end
+    love.graphics.rectangle("fill", bx, by, sz, sz, 7, 7)
+    love.graphics.setColor(active and {0.95,0.45,0.15} or (hov and {0.75,0.30,0.10} or {0.45,0.20,0.08}))
+    love.graphics.rectangle("line", bx, by, sz, sz, 7, 7)
+
+    -- Craneo: circulo de cabeza
+    local cx = bx + sz/2
+    local cy = by + sz/2 - 3
+    love.graphics.setColor(hov and {1,0.92,0.80} or {0.80,0.70,0.58})
+    love.graphics.circle("fill", cx, cy, sz*0.29)
+    -- Mandibula (rectangulo inferior)
+    love.graphics.rectangle("fill", cx - sz*0.16, cy + sz*0.10, sz*0.32, sz*0.14, 2, 2)
+    -- Ojos huecos
+    love.graphics.setColor(active and {0.30,0.14,0.06} or (hov and {0.22,0.10,0.04} or {0.10,0.06,0.04}))
+    love.graphics.circle("fill", cx - sz*0.10, cy - sz*0.02, sz*0.076)
+    love.graphics.circle("fill", cx + sz*0.10, cy - sz*0.02, sz*0.076)
+    -- Dientes
+    for i = 0, 2 do
+        love.graphics.rectangle("fill", cx - sz*0.15 + i*sz*0.145, cy + sz*0.14, sz*0.10, sz*0.09, 1, 1)
+    end
+
+    -- Contador encima del boton cuando estamos esperando siguiente ola
+    if awaitingNextWave then
+        local secs = math.ceil(waveTimer)
+        love.graphics.setFont(fSmall)
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", bx, by+sz-15, sz, 15, 0, 0, 7, 7)
+        love.graphics.setColor(1.0, 0.85, 0.10)
+        love.graphics.printf(secs .. "s", bx, by+sz-14, sz, "center")
+    end
+end
+
+-- Computes popup bounds so draw and click share the same layout
+local function getPopupBounds(bx, by, preview, canAdv)
+    local pw = 160
+    local ph = 26 + #preview * 18 + 4
+    if canAdv then ph = ph + 30 end
+    local px = (bx + SKULL_SZ + 4 + pw > GAME_W - 2) and (bx - pw - 4) or (bx + SKULL_SZ + 4)
+    local py = math.max(4, math.min(by, 768 - ph - 4))
+    return px, py, pw, ph
+end
+
+local function drawWavePreviewPopup(bx, by)
+    local preview = wave:nextWavePreview()
+    local canAdv  = wave.canAdvance and not awaitingNextWave
+
+    if not preview then
+        -- ultima ola activa, no hay siguiente
+        local pw, ph = 148, 36
+        local px = (bx + SKULL_SZ + 4 + pw > GAME_W - 2) and (bx - pw - 4) or (bx + SKULL_SZ + 4)
+        local py = math.max(4, math.min(by, 768 - ph - 4))
+        love.graphics.setColor(0.08, 0.06, 0.04, 0.92)
+        love.graphics.rectangle("fill", px, py, pw, ph, 6, 6)
+        love.graphics.setColor(0.50, 0.22, 0.08)
+        love.graphics.rectangle("line", px, py, pw, ph, 6, 6)
+        love.graphics.setFont(fSmall)
+        love.graphics.setColor(0.95, 0.55, 0.15)
+        love.graphics.printf("Ultima ola", px, py+11, pw, "center")
+        return
+    end
+
+    local waveNum = wave.waveIndex + 1
+    local px, py, pw, ph = getPopupBounds(bx, by, preview, canAdv)
+
+    love.graphics.setColor(0.08, 0.06, 0.04, 0.94)
+    love.graphics.rectangle("fill", px, py, pw, ph, 6, 6)
+    love.graphics.setColor(0.50, 0.22, 0.08)
+    love.graphics.rectangle("line", px, py, pw, ph, 6, 6)
+
+    love.graphics.setFont(fSmall)
+    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.print("Ola " .. waveNum .. " / " .. wave.maxWaves, px+8, py+5)
+
+    local eColors = {basic={0.90,0.22,0.22}, fast={0.90,0.70,0.10}, tank={0.55,0.35,0.95}}
+    local eNames  = {basic="Basico", fast="Rapido", tank="Tanque"}
+    for i, g in ipairs(preview) do
+        local ry = py + 22 + (i-1)*18
+        love.graphics.setColor(eColors[g.kind] or {0.7,0.7,0.7})
+        love.graphics.circle("fill", px+13, ry+7, 5)
+        love.graphics.setColor(0.88, 0.88, 0.88)
+        love.graphics.print((eNames[g.kind] or g.kind) .. "  x" .. g.count, px+23, ry)
+    end
+
+    -- Boton "Avanzar ola" solo cuando ha pasado el tiempo de bloqueo
+    if canAdv then
+        local mx2, my2 = love.mouse.getPosition()
+        local abx = px + 8
+        local aby = py + ph - 27
+        local abw = pw - 16
+        local abh = 22
+        local hovAdv = mx2 >= abx and mx2 <= abx+abw and my2 >= aby and my2 <= aby+abh
+        love.graphics.setColor(hovAdv and {0.22,0.38,0.12} or {0.14,0.25,0.08})
+        love.graphics.rectangle("fill", abx, aby, abw, abh, 4, 4)
+        love.graphics.setColor(hovAdv and {0.60,0.90,0.30} or {0.38,0.65,0.18})
+        love.graphics.rectangle("line", abx, aby, abw, abh, 4, 4)
+        love.graphics.setColor(hovAdv and {0.92,1.0,0.82} or {0.78,0.95,0.65})
+        love.graphics.printf(">> Avanzar  +20g", abx, aby+4, abw, "center")
+    end
+end
+
 local function drawPauseBtn()
     local mx, my = love.mouse.getPosition()
     local hov = mx >= PAUSE_X and mx <= PAUSE_X+PAUSE_SZ
@@ -114,7 +252,7 @@ end
 local CONTROLS = {
     {"Click mapa",        "Colocar torre seleccionada"},
     {"Click torre",       "Ver mejoras / vender"},
-    {"Espacio",           "Avanzar a la siguiente ola"},
+    {"Espacio",           "Acelerar contador entre olas"},
     {"R",                 "Reiniciar nivel actual"},
     {"M",                 "Volver al mapa de niveles"},
     {"Esc",               "Pausar / Cancelar seleccion"},
@@ -217,6 +355,8 @@ local function initGame(levelData)
     awaitingNextWave = false
     gameOver         = false
     victory          = false
+    gamePaused       = false
+    wavePreviewOpen  = false
     gold             = levelData.goldStart
     lives            = levelData.livesStart
     gloveCooldown    = 0
@@ -321,40 +461,13 @@ function love.draw()
 
     ui:draw(gold, lives, wave.waveIndex, wave.maxWaves)
 
-    -- Next-wave indicator — fixed bottom-center, never overlaps enemies
-    local BX = math.floor((GAME_W - 290) / 2)
-    local BY = 726
-    if awaitingNextWave then
-        local secs = math.ceil(waveTimer)
-        love.graphics.setFont(fMedium)
-        love.graphics.setColor(0, 0, 0, 0.68)
-        love.graphics.rectangle("fill", BX, BY, 290, 30, 6, 6)
-        love.graphics.setColor(1.0, 0.85, 0.10)
-        love.graphics.print("Ola " .. (wave.waveIndex+1) .. " en " .. secs .. "s", BX+10, BY+6)
-        local preview = wave:nextWavePreview()
-        if preview then
-            local kinds = {}
-            for _, g in ipairs(preview) do
-                table.insert(kinds, g.count .. " " .. g.kind)
-            end
-            love.graphics.setFont(fSmall)
-            love.graphics.setColor(0, 0, 0, 0.58)
-            love.graphics.rectangle("fill", BX, BY+34, 290, 20, 4, 4)
-            love.graphics.setColor(0.70, 0.70, 0.70)
-            love.graphics.print("  " .. table.concat(kinds, " + "), BX+6, BY+37)
-        end
-        love.graphics.setFont(fSmall)
-    elseif wave.waveIndex == 0 and not wave.active then
-        love.graphics.setFont(fMedium)
-        love.graphics.setColor(0, 0, 0, 0.68)
-        love.graphics.rectangle("fill", BX, BY, 290, 30, 6, 6)
-        love.graphics.setColor(0.40, 1.00, 0.40)
-        love.graphics.print("Pulsa Espacio para iniciar", BX+10, BY+6)
-        love.graphics.setFont(fSmall)
-    end
-
-    -- Pause / Glove buttons (only when game is active)
+    -- Skull (wave preview) button + popup
     if not gameOver and not victory then
+        local skulX, skulY = getSkullPos()
+        drawWaveSkullBtn(skulX, skulY)
+        if wavePreviewOpen then
+            drawWavePreviewPopup(skulX, skulY)
+        end
         drawPauseBtn()
         drawGloveBtn()
     end
@@ -492,7 +605,41 @@ function love.mousepressed(x, y, button)
     -- Pause button click
     if x >= PAUSE_X and x <= PAUSE_X+PAUSE_SZ and y >= PAUSE_Y and y <= PAUSE_Y+PAUSE_SZ then
         gamePaused = true
+        wavePreviewOpen = false
         return
+    end
+
+    -- Skull (wave preview) button click
+    do
+        local skulX, skulY = getSkullPos()
+        -- Check advance button inside preview popup
+        if wavePreviewOpen and wave.canAdvance and not awaitingNextWave then
+            local preview = wave:nextWavePreview()
+            if preview then
+                local px, py, pw, ph = getPopupBounds(skulX, skulY, preview, true)
+                local abx = px + 8
+                local aby = py + ph - 27
+                local abw = pw - 16
+                local abh = 22
+                if x >= abx and x <= abx+abw and y >= aby and y <= aby+abh then
+                    if wave.waveIndex < wave.maxWaves then
+                        gold = gold + 20
+                        wave:start()
+                        wavePreviewOpen = false
+                    end
+                    return
+                end
+            end
+        end
+        -- Skull click always toggles preview
+        if x >= skulX and x <= skulX+SKULL_SZ and y >= skulY and y <= skulY+SKULL_SZ then
+            wavePreviewOpen = not wavePreviewOpen
+            return
+        end
+        -- Click outside popup closes it
+        if wavePreviewOpen and x < GAME_W then
+            wavePreviewOpen = false
+        end
     end
 
     -- Glove button click
@@ -611,8 +758,8 @@ function love.keypressed(key)
     elseif key == "space" then
         if not gameOver and not victory then
             if awaitingNextWave then
-                awaitingNextWave = false
-                wave:start()
+                -- Skip the remaining cooldown (does NOT launch mid-combat)
+                waveTimer = 0
             elseif wave.waveIndex == 0 and not wave.active then
                 wave:start()
             end

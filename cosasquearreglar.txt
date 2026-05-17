@@ -1,0 +1,2 @@
+el boton de avanzar ordas no funciona para todas las hordas, quiero que marque con un circulo el cuanto falta para que inicie la proxima orda y si lo picamos una vez podamos ver la preview y si lo picamos doblevez podamos avanzar la orda, quita lo de avanzar con espacio de la partida y controles y de donde este. asi estilo king dom rush.
+otra cosa.
