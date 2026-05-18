@@ -2,20 +2,19 @@ local Enemy = require("src.enemy")
 local Wave  = {}
 Wave.__index = Wave
 
-local ADVANCE_DELAY = 9  -- seconds after wave start before early advance is allowed
-
 function Wave.new(waypoints, waveDefs)
     local self = setmetatable({}, Wave)
-    self.waypoints    = waypoints
-    self.waveDefs     = waveDefs
-    self.waveIndex    = 0
-    self.groups       = {}
-    self.timer        = 0
-    self.active       = false
-    self.allSpawned   = false
-    self.maxWaves     = #waveDefs
-    self.advanceTimer = 0
-    self.canAdvance   = false
+    self.waypoints     = waypoints
+    self.waveDefs      = waveDefs
+    self.waveIndex     = 0
+    self.groups        = {}
+    self.currentGroup  = 1
+    self.timer         = 0
+    self.active        = false
+    self.allSpawned    = false
+    self.maxWaves      = #waveDefs
+    self.activeTimer   = 0
+    self.spawnDuration = 0
     return self
 end
 
@@ -24,7 +23,10 @@ function Wave:start()
     if self.waveIndex > self.maxWaves then return false end
     local def = self.waveDefs[self.waveIndex]
     self.groups = {}
+    local totalGroupTime = 0
     for _, g in ipairs(def) do
+        -- Groups spawn sequentially; spawnDuration = sum of all group times + 5s buffer
+        totalGroupTime = totalGroupTime + g.count * g.interval
         table.insert(self.groups, {
             kind     = g.kind,
             count    = g.count,
@@ -33,49 +35,42 @@ function Wave:start()
             spawned  = 0,
         })
     end
-    self.active       = true
-    self.allSpawned   = false
-    self.advanceTimer = 0
-    self.canAdvance   = false
+    self.spawnDuration = totalGroupTime + 5
+    self.currentGroup  = 1
+    self.active        = true
+    self.allSpawned    = false
+    self.activeTimer   = 0
     return true
 end
 
 function Wave:update(dt, enemies)
-    -- advanceTimer ticks for the full duration a wave is in progress
-    -- (active while spawning, or allSpawned while enemies still alive)
     if self.waveIndex > 0 then
-        self.advanceTimer = self.advanceTimer + dt
-        if self.advanceTimer >= ADVANCE_DELAY then
-            self.canAdvance = true
-        end
+        self.activeTimer = self.activeTimer + dt
     end
 
     if not self.active then return end
 
-    local allDone = true
-    for _, g in ipairs(self.groups) do
-        if g.spawned < g.count then
-            allDone = false
-            g.timer = g.timer + dt
-            if g.timer >= g.interval then
-                g.timer   = 0
-                g.spawned = g.spawned + 1
-                table.insert(enemies, Enemy.new(g.kind, self.waypoints))
-            end
-        end
-    end
-    if allDone then
+    local g = self.groups[self.currentGroup]
+    if not g then
         self.allSpawned = true
         self.active     = false
+        return
     end
-end
 
-function Wave:isFinished(enemies)
-    if not self.allSpawned then return false end
-    for _, e in ipairs(enemies) do
-        if not e.dead and not e.reached then return false end
+    if g.spawned < g.count then
+        g.timer = g.timer + dt
+        if g.timer >= g.interval then
+            g.timer   = g.timer - g.interval
+            g.spawned = g.spawned + 1
+            table.insert(enemies, Enemy.new(g.kind, self.waypoints))
+        end
+    else
+        self.currentGroup = self.currentGroup + 1
+        if not self.groups[self.currentGroup] then
+            self.allSpawned = true
+            self.active     = false
+        end
     end
-    return true
 end
 
 -- Returns description of next wave enemies for preview

@@ -2,20 +2,20 @@ local Enemy = {}
 Enemy.__index = Enemy
 
 local TYPES = {
-    basic = {hp=120, speed=45,  armor=0.0, color={0.90,0.20,0.20}, reward=10, radius=10, attack=8},
-    fast  = {hp=60,  speed=90,  armor=0.0, color={0.90,0.70,0.10}, reward=15, radius=8,  attack=12},
-    tank  = {hp=450, speed=22,  armor=0.45,color={0.40,0.20,0.80}, reward=30, radius=14, attack=22},
+    basic = {hp=240, speed=45,  armor=0.0, reward=10, radius=10, attack=8},
+    fast  = {hp=120, speed=90,  armor=0.0, reward=15, radius=8,  attack=12},
+    tank  = {hp=900, speed=22,  armor=0.45,reward=30, radius=14, attack=22},
 }
 
 function Enemy.new(kind, waypoints)
     local t    = TYPES[kind] or TYPES.basic
     local self = setmetatable({}, Enemy)
+    self.kind      = kind
     self.hp        = t.hp
     self.maxHp     = t.hp
     self.speed     = t.speed
     self.baseSpeed = t.speed
     self.armor     = t.armor
-    self.color     = t.color
     self.reward    = t.reward
     self.radius    = t.radius
     self.attack    = t.attack
@@ -63,13 +63,11 @@ end
 function Enemy:update(dt)
     if self.dead or self.reached then return end
 
-    -- Stop as soon as a warrior locks on (moving toward) or is fighting
     if self.engagedBy then
         local ws = self.engagedBy.state
         if ws == "moving" or ws == "fighting" then
             return
         else
-            -- warrior lost interest (idle/respawning), free this enemy
             self.engagedBy = nil
         end
     end
@@ -123,21 +121,43 @@ function Enemy:takeDamage(amount, opts)
 end
 
 function Enemy:draw()
-    love.graphics.setColor(self.color)
+    -- fast: white fill + black border (visually lighter, faster)
+    -- basic/tank: black fill + white border
+    local isFast = self.kind == "fast"
+    local isTank = self.kind == "tank"
+
+    if isFast then
+        love.graphics.setColor(1, 1, 1)
+    else
+        love.graphics.setColor(0, 0, 0)
+    end
     love.graphics.circle("fill", self.x, self.y, self.radius)
 
+    if isFast then
+        love.graphics.setColor(0, 0, 0)
+    else
+        love.graphics.setColor(1, 1, 1)
+    end
+    love.graphics.setLineWidth(isTank and 2.5 or 1.5)
+    love.graphics.circle("line", self.x, self.y, self.radius)
+    love.graphics.setLineWidth(1)
+
+    -- Slow indicator: thin white ring
     if self.slowTimer > 0 then
-        love.graphics.setColor(0.4, 0.7, 1.0, 0.35)
-        love.graphics.circle("fill", self.x, self.y, self.radius)
+        love.graphics.setColor(1, 1, 1, 0.30)
+        love.graphics.circle("line", self.x, self.y, self.radius + 3)
     end
 
+    -- Health bar
     local bw = self.radius * 2
     local bx = self.x - self.radius
     local by = self.y - self.radius - 8
-    love.graphics.setColor(0.55, 0.10, 0.10)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", bx, by, bw, 4)
-    love.graphics.setColor(0.10, 0.85, 0.10)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("fill", bx, by, bw * math.max(0, self.hp / self.maxHp), 4)
+    love.graphics.setColor(1, 1, 1, 0.40)
+    love.graphics.rectangle("line", bx, by, bw, 4)
 end
 
 return Enemy

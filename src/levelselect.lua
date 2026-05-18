@@ -10,7 +10,6 @@ end
 
 local ROMAN = {"I","II","III","IV","V","VI","VII","VIII","IX","X"}
 
--- World-map node positions for 10 levels (winding trail)
 local NODES = {
     {x=185,  y=640},
     {x=430,  y=580},
@@ -48,27 +47,20 @@ local function isUnlocked(slotData, lv)
 end
 
 function LevelSelect:draw()
-    love.graphics.setColor(0.10, 0.13, 0.08)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", 0, 0, W, H)
 
-    love.graphics.setColor(0.14, 0.17, 0.11)
-    for gx = 0, W, 60 do
-        for gy = 0, H, 60 do
-            love.graphics.circle("fill", gx + math.sin(gx*gy)*10, gy, 1)
-        end
-    end
-
     love.graphics.setFont(self.fonts.title)
-    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.printf("SELECCIONAR NIVEL", 0, 28, W, "center")
 
     -- Connecting roads
-    love.graphics.setLineWidth(8)
+    love.graphics.setLineWidth(4)
     for i = 1, #NODES - 1 do
         local a    = NODES[i]
         local b    = NODES[i+1]
         local unlk = isUnlocked(self.slotData, i+1)
-        love.graphics.setColor(unlk and {0.52,0.40,0.22} or {0.25,0.22,0.18})
+        love.graphics.setColor(1, 1, 1, unlk and 0.70 or 0.18)
         love.graphics.line(a.x, a.y, b.x, b.y)
     end
     love.graphics.setLineWidth(1)
@@ -82,50 +74,57 @@ function LevelSelect:draw()
         local unlk  = isUnlocked(self.slotData, i)
         local hov   = unlk and math.sqrt((mx-nd.x)^2 + (my-nd.y)^2) < NODE_R + 8
 
+        -- Pulse glow for current unlocked+undone node
         if unlk and not done then
             local pulse = 0.5 + 0.5 * math.sin(t*2.5)
-            love.graphics.setColor(0.95, 0.78, 0.14, 0.18 + pulse*0.15)
-            love.graphics.circle("fill", nd.x, nd.y, NODE_R + 12)
+            love.graphics.setColor(1, 1, 1, 0.06 + pulse*0.08)
+            love.graphics.circle("fill", nd.x, nd.y, NODE_R + 14)
         end
 
+        -- Node fill
         if done then
-            love.graphics.setColor(0.18, 0.45, 0.18)
+            -- Completed: white fill
+            love.graphics.setColor(1, 1, 1)
         elseif unlk then
-            love.graphics.setColor(hov and {0.25,0.38,0.58} or {0.18,0.28,0.45})
+            -- Available: black fill, brighter on hover
+            love.graphics.setColor(0, 0, 0)
         else
-            love.graphics.setColor(0.16, 0.16, 0.20)
+            -- Locked: black fill
+            love.graphics.setColor(0, 0, 0)
         end
         love.graphics.circle("fill", nd.x, nd.y, NODE_R)
 
+        -- Node border
+        love.graphics.setLineWidth(done and 2 or (unlk and 2 or 1))
         if done then
-            love.graphics.setColor(0.40, 0.90, 0.40)
+            love.graphics.setColor(0, 0, 0)  -- black border on white
         elseif unlk then
-            love.graphics.setColor(hov and {0.80,0.65,0.20} or {0.45,0.55,0.75})
+            love.graphics.setColor(1, 1, 1, hov and 1.0 or 0.80)
         else
-            love.graphics.setColor(0.28, 0.28, 0.32)
+            love.graphics.setColor(1, 1, 1, 0.22)
         end
-        love.graphics.setLineWidth(3)
         love.graphics.circle("line", nd.x, nd.y, NODE_R)
         love.graphics.setLineWidth(1)
 
+        -- Node label
         love.graphics.setFont(self.fonts.node)
         if done then
-            love.graphics.setColor(0.65, 1.0, 0.65)
+            love.graphics.setColor(0, 0, 0)
             love.graphics.printf("OK", nd.x - NODE_R, nd.y - 11, NODE_R*2, "center")
         elseif unlk then
-            love.graphics.setColor(hov and {1,0.92,0.70} or {0.82,0.88,1.00})
+            love.graphics.setColor(1, 1, 1, hov and 1.0 or 0.85)
             love.graphics.printf(ROMAN[i] or tostring(i), nd.x - NODE_R, nd.y - 11, NODE_R*2, "center")
         else
-            love.graphics.setColor(0.35, 0.35, 0.40)
+            love.graphics.setColor(1, 1, 1, 0.22)
             love.graphics.printf("?", nd.x - NODE_R, nd.y - 11, NODE_R*2, "center")
         end
 
+        -- Level name + wave count below node
         love.graphics.setFont(self.fonts.label)
-        love.graphics.setColor(unlk and {0.85,0.85,0.85} or {0.35,0.35,0.35})
+        love.graphics.setColor(1, 1, 1, unlk and 0.75 or 0.20)
         love.graphics.printf(Levels[i].name, nd.x - 75, nd.y + NODE_R + 6, 150, "center")
-
         if unlk then
-            love.graphics.setColor(0.50, 0.50, 0.50)
+            love.graphics.setColor(1, 1, 1, 0.40)
             love.graphics.printf(#Levels[i].waves .. " olas", nd.x - 75, nd.y + NODE_R + 22, 150, "center")
         end
     end
@@ -134,13 +133,23 @@ function LevelSelect:draw()
     local bx = W/2 - 120
     local by = H - 72
     local hbk = inRect(mx, my, bx, by, 240, 46)
-    love.graphics.setColor(hbk and {0.14,0.20,0.14} or {0.08,0.12,0.08})
-    love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
-    love.graphics.setColor(hbk and {0.40,0.70,0.40} or {0.22,0.38,0.22})
-    love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
-    love.graphics.setFont(self.fonts.btn)
-    love.graphics.setColor(hbk and {0.85,1,0.85} or {0.65,0.85,0.65})
-    love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    if hbk then
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.btn)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    else
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.btn)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    end
 end
 
 function LevelSelect:click(mx, my)

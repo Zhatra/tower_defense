@@ -3,13 +3,12 @@ Menu.__index = Menu
 
 local W, H = 1168, 768
 
--- Pre-generate background stars
 local function makeStars(n)
     local s = {}
     math.randomseed(42)
     for i = 1, n do
         s[i] = {x=math.random(0,W), y=math.random(0,H),
-                r=math.random(1,2)*0.5, a=math.random(20,80)/100}
+                r=math.random(1,2)*0.5, a=math.random(15,55)/100}
     end
     return s
 end
@@ -17,7 +16,7 @@ end
 local BUTTONS = {
     {id="play",    label="JUGAR"},
     {id="options", label="OPCIONES"},
-    {id="credits", label="CRÉDITOS"},
+    {id="credits", label="CREDITOS"},
     {id="quit",    label="SALIR"},
 }
 
@@ -26,7 +25,7 @@ local BSTART_Y = 310
 
 function Menu.new()
     local self = setmetatable({}, Menu)
-    self.screen = "main"  -- "main" | "options" | "credits"
+    self.screen = "main"
     self.stars  = makeStars(120)
     self.fonts  = {
         title = love.graphics.newFont(56),
@@ -52,8 +51,7 @@ function Menu:draw()
 end
 
 function Menu:_drawMain()
-    -- Background
-    love.graphics.setColor(0.04, 0.055, 0.10)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", 0, 0, W, H)
 
     -- Stars
@@ -62,97 +60,93 @@ function Menu:_drawMain()
         love.graphics.circle("fill", s.x, s.y, s.r)
     end
 
-    -- Decorative top bar
-    love.graphics.setColor(0.95, 0.75, 0.15, 0.15)
-    love.graphics.rectangle("fill", 0, 0, W, 4)
+    -- Top border line
+    love.graphics.setColor(1, 1, 1, 0.20)
+    love.graphics.rectangle("fill", 0, 0, W, 1)
 
     -- Title
     love.graphics.setFont(self.fonts.title)
-    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.printf("TOWER DEFENSE", 0, 110, W, "center")
 
     -- Subtitle
     love.graphics.setFont(self.fonts.sub)
-    love.graphics.setColor(0.45, 0.72, 0.45)
+    love.graphics.setColor(1, 1, 1, 0.50)
     love.graphics.printf("Defiende tu reino de las hordas enemigas", 0, 188, W, "center")
 
     -- Divider
     local lw = 200
-    love.graphics.setColor(0.95, 0.75, 0.15, 0.40)
+    love.graphics.setColor(1, 1, 1, 0.25)
     love.graphics.rectangle("fill", W/2 - lw/2, 220, lw, 1)
 
     -- Buttons
     local mx, my = love.mouse.getPosition()
     for i, b in ipairs(BUTTONS) do
         local bx, by, bw, bh = btn_rect(i)
-        local hovered = inRect(mx, my, bx, by, bw, bh)
+        local hov = inRect(mx, my, bx, by, bw, bh)
 
-        if hovered then
-            love.graphics.setColor(0.14, 0.20, 0.32)
+        if hov then
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.rectangle("fill", bx, by, bw, bh, 8, 8)
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.rectangle("line", bx, by, bw, bh, 8, 8)
+            love.graphics.setFont(self.fonts.btn)
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.printf(b.label, bx, by + 15, bw, "center")
         else
-            love.graphics.setColor(0.08, 0.12, 0.22)
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.rectangle("fill", bx, by, bw, bh, 8, 8)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.rectangle("line", bx, by, bw, bh, 8, 8)
+            love.graphics.setFont(self.fonts.btn)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.printf(b.label, bx, by + 15, bw, "center")
         end
-        love.graphics.rectangle("fill", bx, by, bw, bh, 8, 8)
-
-        local bc = hovered and {0.70, 0.58, 0.18} or {0.30, 0.30, 0.50}
-        love.graphics.setColor(bc)
-        love.graphics.rectangle("line", bx, by, bw, bh, 8, 8)
-
-        love.graphics.setFont(self.fonts.btn)
-        love.graphics.setColor(hovered and {1, 0.92, 0.70} or {0.82, 0.82, 0.92})
-        love.graphics.printf(b.label, bx, by + 15, bw, "center")
     end
 
-    -- Version hint
     love.graphics.setFont(self.fonts.small)
-    love.graphics.setColor(0.28, 0.28, 0.28)
-    love.graphics.printf("LÖVE 11.5  •  v0.2", 0, H - 28, W, "center")
+    love.graphics.setColor(1, 1, 1, 0.20)
+    love.graphics.printf("LOVE 11.5  v0.2", 0, H - 28, W, "center")
 end
 
 function Menu:_drawOptions()
-    love.graphics.setColor(0.04, 0.055, 0.10)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", 0, 0, W, H)
     for _, s in ipairs(self.stars) do
-        love.graphics.setColor(1, 1, 1, s.a * 0.5)
+        love.graphics.setColor(1, 1, 1, s.a * 0.4)
         love.graphics.circle("fill", s.x, s.y, s.r)
     end
-
     love.graphics.setFont(self.fonts.title)
-    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.printf("OPCIONES", 0, 100, W, "center")
-
     love.graphics.setFont(self.fonts.sub)
-    love.graphics.setColor(0.55, 0.55, 0.55)
-    love.graphics.printf("Más opciones próximamente", 0, 200, W, "center")
-
+    love.graphics.setColor(1, 1, 1, 0.40)
+    love.graphics.printf("Mas opciones proximamente", 0, 200, W, "center")
     self:_backButton()
 end
 
 function Menu:_drawCredits()
-    love.graphics.setColor(0.04, 0.055, 0.10)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", 0, 0, W, H)
     for _, s in ipairs(self.stars) do
-        love.graphics.setColor(1, 1, 1, s.a * 0.5)
+        love.graphics.setColor(1, 1, 1, s.a * 0.4)
         love.graphics.circle("fill", s.x, s.y, s.r)
     end
-
     love.graphics.setFont(self.fonts.title)
-    love.graphics.setColor(0.95, 0.78, 0.14)
-    love.graphics.printf("CRÉDITOS", 0, 100, W, "center")
-
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf("CREDITOS", 0, 100, W, "center")
     local lines = {
-        "Motor: LÖVE 11.5  (love2d.org)",
+        "Motor: LOVE 11.5  (love2d.org)",
         "Lenguaje: Lua 5.4",
         "",
-        "Diseño y programación",
+        "Diseno y programacion",
         "Proyecto personal — 2026",
     }
     love.graphics.setFont(self.fonts.sub)
     for i, ln in ipairs(lines) do
-        love.graphics.setColor(i <= 2 and {0.65,0.65,0.65} or {0.90,0.90,0.90})
+        love.graphics.setColor(1, 1, 1, i <= 2 and 0.50 or 0.85)
         love.graphics.printf(ln, 0, 230 + (i-1)*36, W, "center")
     end
-
     self:_backButton()
 end
 
@@ -161,16 +155,25 @@ function Menu:_backButton()
     local by = H - 110
     local mx, my = love.mouse.getPosition()
     local hov = inRect(mx, my, bx, by, 240, 46)
-    love.graphics.setColor(hov and {0.14,0.20,0.32} or {0.08,0.12,0.22})
-    love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
-    love.graphics.setColor(hov and {0.60,0.50,0.15} or {0.28,0.28,0.45})
-    love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
-    love.graphics.setFont(self.fonts.btn)
-    love.graphics.setColor(hov and {1,0.92,0.70} or {0.80,0.80,0.90})
-    love.graphics.printf("← VOLVER", bx, by+13, 240, "center")
+    if hov then
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.btn)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    else
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.btn)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    end
 end
 
--- Returns "play" | "options" | "credits" | "quit" | nil
 function Menu:click(mx, my)
     if self.screen ~= "main" then
         local bx = W/2 - 120

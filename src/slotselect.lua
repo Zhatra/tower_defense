@@ -34,15 +34,15 @@ local function cardX(i)
 end
 
 function SlotSelect:draw()
-    love.graphics.setColor(0.05, 0.07, 0.12)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", 0, 0, W, H)
 
     love.graphics.setFont(self.fonts.title)
-    love.graphics.setColor(0.95, 0.78, 0.14)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.printf("SELECCIONAR PARTIDA", 0, 120, W, "center")
 
     love.graphics.setFont(self.fonts.small)
-    love.graphics.setColor(0.45, 0.45, 0.45)
+    love.graphics.setColor(1, 1, 1, 0.40)
     love.graphics.printf("Elige una ranura para jugar", 0, 178, W, "center")
 
     local mx, my = love.mouse.getPosition()
@@ -53,42 +53,57 @@ function SlotSelect:draw()
         local s  = self.slots[i]
         local hov = inRect(mx, my, cx, cy, CARD_W, CARD_H)
 
-        -- Card background
-        love.graphics.setColor(hov and {0.14,0.20,0.32} or {0.09,0.12,0.20})
-        love.graphics.rectangle("fill", cx, cy, CARD_W, CARD_H, 10, 10)
-        love.graphics.setColor(hov and {0.60,0.50,0.18} or {0.25,0.30,0.50})
-        love.graphics.rectangle("line", cx, cy, CARD_W, CARD_H, 10, 10)
+        if hov then
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.rectangle("fill", cx, cy, CARD_W, CARD_H, 10, 10)
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.rectangle("line", cx, cy, CARD_W, CARD_H, 10, 10)
+        else
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.rectangle("fill", cx, cy, CARD_W, CARD_H, 10, 10)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.rectangle("line", cx, cy, CARD_W, CARD_H, 10, 10)
+        end
 
-        -- Slot header
+        local textColor = hov and {0,0,0} or {1,1,1}
+        local dimColor  = hov and {0,0,0,0.55} or {1,1,1,0.45}
+
         love.graphics.setFont(self.fonts.slot)
-        love.graphics.setColor(0.50, 0.72, 1.00)
+        love.graphics.setColor(textColor)
         love.graphics.print("RANURA " .. i, cx+16, cy+14)
 
         if s then
             local done = Saves.countCompleted(s)
             love.graphics.setFont(self.fonts.slot)
-            love.graphics.setColor(0.95, 0.78, 0.14)
+            love.graphics.setColor(textColor)
             love.graphics.printf(done .. " / " .. MAX_LEVELS, cx, cy+56, CARD_W, "center")
             love.graphics.setFont(self.fonts.small)
-            love.graphics.setColor(0.55, 0.55, 0.55)
+            love.graphics.setColor(dimColor)
             love.graphics.printf("niveles completados", cx, cy+82, CARD_W, "center")
-
-            love.graphics.setFont(self.fonts.small)
-            love.graphics.setColor(0.38, 0.38, 0.38)
             love.graphics.printf(s.date or "", cx, cy+120, CARD_W, "center")
 
             -- Delete button
             local dx2 = cx + CARD_W - 62
             local dy2 = cy + 12
-            love.graphics.setColor(0.45, 0.15, 0.15)
-            love.graphics.rectangle("fill", dx2, dy2, 50, 22, 4, 4)
-            love.graphics.setColor(0.80, 0.35, 0.35)
-            love.graphics.rectangle("line", dx2, dy2, 50, 22, 4, 4)
-            love.graphics.setColor(1, 0.80, 0.80)
-            love.graphics.printf("Borrar", dx2, dy2+4, 50, "center")
+            local dHov = inRect(mx, my, dx2, dy2, 50, 22)
+            if dHov then
+                love.graphics.setColor(1, 1, 1)
+                love.graphics.rectangle("fill", dx2, dy2, 50, 22, 4, 4)
+                love.graphics.setColor(0, 0, 0)
+                love.graphics.rectangle("line", dx2, dy2, 50, 22, 4, 4)
+                love.graphics.setColor(0, 0, 0)
+                love.graphics.printf("Borrar", dx2, dy2+4, 50, "center")
+            else
+                love.graphics.setColor(0, 0, 0)
+                love.graphics.rectangle("fill", dx2, dy2, 50, 22, 4, 4)
+                love.graphics.setColor(1, 1, 1, 0.70)
+                love.graphics.rectangle("line", dx2, dy2, 50, 22, 4, 4)
+                love.graphics.setColor(1, 1, 1, 0.70)
+                love.graphics.printf("Borrar", dx2, dy2+4, 50, "center")
+            end
         else
             love.graphics.setFont(self.fonts.small)
-            love.graphics.setColor(0.45, 0.45, 0.45)
+            love.graphics.setColor(dimColor)
             love.graphics.printf("— Nueva partida —", cx, cy + CARD_H/2 - 8, CARD_W, "center")
         end
     end
@@ -97,18 +112,26 @@ function SlotSelect:draw()
     local bx = W/2 - 120
     local by = H - 100
     local hbk = inRect(mx, my, bx, by, 240, 46)
-    love.graphics.setColor(hbk and {0.14,0.20,0.32} or {0.08,0.12,0.22})
-    love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
-    love.graphics.setColor(hbk and {0.50,0.42,0.12} or {0.25,0.25,0.40})
-    love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
-    love.graphics.setFont(self.fonts.slot)
-    love.graphics.setColor(hbk and {1,0.92,0.70} or {0.80,0.80,0.90})
-    love.graphics.printf("← VOLVER", bx, by+13, 240, "center")
+    if hbk then
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.slot)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    else
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("fill", bx, by, 240, 46, 8, 8)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("line", bx, by, 240, 46, 8, 8)
+        love.graphics.setFont(self.fonts.slot)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("<- VOLVER", bx, by+13, 240, "center")
+    end
 end
 
--- Returns "back" | slotIndex (number) | nil
 function SlotSelect:click(mx, my)
-    -- Back
     local bx = W/2 - 120
     local by = H - 100
     if inRect(mx, my, bx, by, 240, 46) then return "back" end
@@ -118,7 +141,6 @@ function SlotSelect:click(mx, my)
         local cy = CARD_Y
         if inRect(mx, my, cx, cy, CARD_W, CARD_H) then
             local s = self.slots[i]
-            -- Delete button check
             if s then
                 local dx2 = cx + CARD_W - 62
                 local dy2 = cy + 12

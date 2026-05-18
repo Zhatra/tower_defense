@@ -3,57 +3,57 @@ Tower.__index = Tower
 
 local TYPES = {
     basic = {
-        label="Básica", damage=20, range=100, fireRate=1.0, cost=50,
-        color={0.20,0.60,1.00}, bulletColor={0.80,0.90,1.00}, bulletSpeed=250,
+        label="Basica", damage=20, range=100, fireRate=1.0, cost=50,
+        color={1,1,1}, bulletColor={1,1,1}, bulletSpeed=250,
         armorIgnore=0,
         upgrades = {
-            [2] = {label="Básica II", cost=75,  damage=32, range=115, fireRate=1.3, bulletSpeed=270},
+            [2] = {label="Basica II", cost=75,  damage=32, range=115, fireRate=1.3, bulletSpeed=270},
             [3] = {
-                A = {label="Cañón",   cost=110, damage=55, range=120, fireRate=0.8,
-                     splash=38, bulletColor={1.00,0.55,0.10}},
+                A = {label="Canon",   cost=110, damage=55, range=120, fireRate=0.8,
+                     splash=38, bulletColor={1,1,1}},
                 B = {label="Shocker", cost=110, damage=28, range=110, fireRate=1.5,
-                     slowDur=2.0, slowFactor=0.45, bulletColor={0.40,0.80,1.00}},
+                     slowDur=2.0, slowFactor=0.45, bulletColor={1,1,1}},
             },
         },
     },
     sniper = {
         label="Francotirador", damage=80, range=200, fireRate=0.4, cost=100,
-        color={0.90,0.80,0.10}, bulletColor={1.00,1.00,0.20}, bulletSpeed=500,
+        color={1,1,1}, bulletColor={1,1,1}, bulletSpeed=500,
         armorIgnore=0.5,
         upgrades = {
             [2] = {label="Franco. II", cost=125, damage=135, range=245, fireRate=0.5, bulletSpeed=560},
             [3] = {
-                A = {label="Élite",     cost=160, damage=220, range=285, fireRate=0.5,
-                     armorIgnore=1.0, instakillAt=0.22, bulletColor={1.00,1.00,0.60}},
+                A = {label="Elite",     cost=160, damage=220, range=285, fireRate=0.5,
+                     armorIgnore=1.0, instakillAt=0.22, bulletColor={1,1,1}},
                 B = {label="Artillero", cost=160, damage=110, range=225, fireRate=0.35,
-                     armorDebufPct=0.55, armorDebufDur=3.0, bulletColor={0.90,0.55,0.20}},
+                     armorDebufPct=0.55, armorDebufDur=3.0, bulletColor={1,1,1}},
             },
         },
     },
     rapid = {
-        label="Rápida", damage=8, range=80, fireRate=4.0, cost=75,
-        color={0.90,0.40,0.10}, bulletColor={1.00,0.60,0.10}, bulletSpeed=300,
+        label="Rapida", damage=8, range=80, fireRate=4.0, cost=75,
+        color={1,1,1}, bulletColor={1,1,1}, bulletSpeed=300,
         armorIgnore=0,
         upgrades = {
-            [2] = {label="Rápida II", cost=100, damage=13, range=90, fireRate=5.5, bulletSpeed=340},
+            [2] = {label="Rapida II", cost=100, damage=13, range=90, fireRate=5.5, bulletSpeed=340},
             [3] = {
                 A = {label="Minigun", cost=130, damage=11, range=90,  fireRate=9.0,
-                     bulletColor={1.00,0.45,0.00}},
+                     bulletColor={1,1,1}},
                 B = {label="Frost",   cost=130, damage=9,  range=100, fireRate=4.5,
-                     slowDur=2.5, slowFactor=0.38, bulletColor={0.55,0.85,1.00}},
+                     slowDur=2.5, slowFactor=0.38, bulletColor={1,1,1}},
             },
         },
     },
     troops = {
         label="Cuartel", damage=12, range=130, fireRate=1.0, cost=100,
-        color={0.20,0.58,0.28}, bulletColor={0.30,0.90,0.40}, bulletSpeed=0,
+        color={1,1,1}, bulletColor={1,1,1}, bulletSpeed=0,
         armorIgnore=0,
         warriorHp=60, warriorCount=3, respawnTime=8,
         upgrades = {
             [2] = {label="Cuartel II", cost=130, damage=18, range=150,
                    warriorHp=90, respawnTime=6},
             [3] = {
-                A = {label="Tropa Élite",  cost=180, damage=28, range=168,
+                A = {label="Tropa Elite",  cost=180, damage=28, range=168,
                      warriorHp=130, respawnTime=5},
                 B = {label="Veteranos",    cost=180, damage=22, range=155,
                      warriorHp=110, respawnTime=3},
@@ -62,16 +62,16 @@ local TYPES = {
     },
     mortar = {
         label="Mortero", damage=70, range=160, fireRate=0.4, cost=125,
-        color={0.55,0.35,0.80}, bulletColor={1.00,0.55,0.10}, bulletSpeed=0,
+        color={1,1,1}, bulletColor={1,1,1}, bulletSpeed=0,
         armorIgnore=0, splash=65,
         upgrades = {
             [2] = {label="Mortero II", cost=155, damage=110, range=185, fireRate=0.5,
-                   splash=80, bulletColor={1.00,0.40,0.05}},
+                   splash=80, bulletColor={1,1,1}},
             [3] = {
                 A = {label="Bombardeo", cost=205, damage=165, range=210, fireRate=0.65,
-                     splash=95, bulletColor={1.00,0.25,0.00}},
+                     splash=95, bulletColor={1,1,1}},
                 B = {label="Napalm",    cost=205, damage=90,  range=185, fireRate=0.5,
-                     splash=78, slowDur=3.5, slowFactor=0.35, bulletColor={1.00,0.65,0.00}},
+                     splash=78, slowDur=3.5, slowFactor=0.35, bulletColor={1,1,1}},
             },
         },
     },
@@ -119,7 +119,6 @@ function Warrior:update(dt, enemies, range)
         return
     end
 
-    -- Validate current target
     if self.target and (self.target.dead or self.target.reached) then
         self:_clearTarget()
         self.state = "idle"
@@ -159,12 +158,9 @@ function Warrior:update(dt, enemies, range)
 
     if self.state == "fighting" then
         if not self.target then self.state = "idle"; return end
-        -- Keep pinned on enemy
         self.x = self.target.x + 9
         self.y = self.target.y - 5
-        -- Damage enemy continuously
         self.target:takeDamage(self.damage * dt, {})
-        -- Take damage from enemy
         self.hp = self.hp - (self.target.attack or 10) * dt
         if self.hp <= 0 then
             self:_clearTarget()
@@ -176,14 +172,15 @@ end
 
 function Warrior:draw()
     if self.state == "respawning" then return end
-    love.graphics.setColor(0.22, 0.82, 0.32)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.circle("fill", self.x, self.y, 6)
-    love.graphics.setColor(0.05, 0.40, 0.12)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.circle("line", self.x, self.y, 6)
+    -- HP bar
     local bw = 14
-    love.graphics.setColor(0.45, 0.10, 0.10)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("fill", self.x-7, self.y-12, bw, 3)
-    love.graphics.setColor(0.10, 0.85, 0.25)
+    love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("fill", self.x-7, self.y-12, bw * math.max(0, self.hp/self.maxHp), 3)
 end
 
@@ -201,7 +198,6 @@ function MortarShell.new(sx, sy, tx, ty, opts)
     self.travelTime  = 1.1
     self.damage      = opts.damage
     self.splash      = opts.splash or 65
-    self.color       = opts.bulletColor or {1.0, 0.55, 0.10}
     self.slowDur     = opts.slowDur    or 0
     self.slowFactor  = opts.slowFactor or 1.0
     self.done        = false
@@ -238,13 +234,15 @@ function MortarShell:_explode(enemies)
 end
 
 function MortarShell:draw()
+    -- Shadow on ground
     local shadowX = self.startX + (self.targetX - self.startX) * self.progress
     local shadowY = self.startY + (self.targetY - self.startY) * self.progress
-    love.graphics.setColor(0, 0, 0, 0.22)
+    love.graphics.setColor(0, 0, 0, 0.35)
     love.graphics.circle("fill", shadowX, shadowY, 6 + self.progress * 4)
-    love.graphics.setColor(self.color)
+    -- Shell
+    love.graphics.setColor(1, 1, 1)
     love.graphics.circle("fill", self.x, self.y, 7)
-    love.graphics.setColor(1, 1, 1, 0.45)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.circle("line", self.x, self.y, 7)
 end
 
@@ -259,7 +257,6 @@ function Bullet.new(x, y, target, opts)
     self.target       = target
     self.damage       = opts.damage
     self.speed        = opts.bulletSpeed or 300
-    self.color        = opts.bulletColor or {1,1,1}
     self.splash       = opts.splash      or 0
     self.slowDur      = opts.slowDur     or 0
     self.slowFactor   = opts.slowFactor  or 1.0
@@ -320,9 +317,11 @@ function Bullet:_applyEffects(e)
 end
 
 function Bullet:draw()
-    love.graphics.setColor(self.color)
     local r = self.splash > 0 and 6 or 4
+    love.graphics.setColor(1, 1, 1)
     love.graphics.circle("fill", self.x, self.y, r)
+    love.graphics.setColor(0, 0, 0, 0.6)
+    love.graphics.circle("line", self.x, self.y, r)
 end
 
 -- ── Tower ─────────────────────────────────────────────────────────────────
@@ -343,8 +342,7 @@ function Tower.new(kind, col, row, tileSize)
     self.range        = t.range
     self.fireRate     = t.fireRate
     self.cost         = t.cost
-    self.color        = {t.color[1], t.color[2], t.color[3]}
-    self.bulletColor  = {t.bulletColor[1], t.bulletColor[2], t.bulletColor[3]}
+    self.color        = {1, 1, 1}
     self.bulletSpeed  = t.bulletSpeed
     self.armorIgnore  = t.armorIgnore  or 0
     self.splash       = t.splash       or 0
@@ -358,7 +356,6 @@ function Tower.new(kind, col, row, tileSize)
     self.cooldown     = 0
     self.bullets      = {}
 
-    -- Troops: spawn warriors
     if kind == "troops" then
         self.warriors = {}
         for i = 1, (t.warriorCount or 3) do
@@ -411,7 +408,6 @@ function Tower:upgrade(spec)
     if u.range        then self.range        = u.range        end
     if u.fireRate     then self.fireRate     = u.fireRate      end
     if u.bulletSpeed  then self.bulletSpeed  = u.bulletSpeed   end
-    if u.bulletColor  then self.bulletColor  = u.bulletColor   end
     if u.splash       then self.splash       = u.splash        end
     if u.slowDur      then self.slowDur      = u.slowDur       end
     if u.slowFactor   then self.slowFactor   = u.slowFactor    end
@@ -420,7 +416,6 @@ function Tower:upgrade(spec)
     if u.armorDebufDur then self.armorDebufDur = u.armorDebufDur end
     if u.instakillAt  then self.instakillAt  = u.instakillAt   end
 
-    -- Troops: update warrior stats
     if self.kind == "troops" and self.warriors then
         for _, w in ipairs(self.warriors) do
             if u.warriorHp   then w.maxHp         = u.warriorHp  end
@@ -435,7 +430,6 @@ function Tower:sellValue()
 end
 
 function Tower:update(dt, enemies)
-    -- Troops tower: run warrior logic
     if self.kind == "troops" then
         for _, w in ipairs(self.warriors) do
             w:update(dt, enemies, self.range)
@@ -461,7 +455,6 @@ function Tower:update(dt, enemies)
         table.insert(self.bullets, MortarShell.new(self.x, self.y, target.x, target.y, {
             damage      = self.damage,
             splash      = self.splash,
-            bulletColor = self.bulletColor,
             slowDur     = self.slowDur,
             slowFactor  = self.slowFactor,
         }))
@@ -469,7 +462,6 @@ function Tower:update(dt, enemies)
         table.insert(self.bullets, Bullet.new(self.x, self.y, target, {
             damage        = self.damage,
             bulletSpeed   = self.bulletSpeed,
-            bulletColor   = self.bulletColor,
             splash        = self.splash,
             slowDur       = self.slowDur,
             slowFactor    = self.slowFactor,
@@ -496,7 +488,6 @@ function Tower:_findTarget(enemies)
                     local wy = wp.y - e.y
                     remDist = math.sqrt(wx*wx + wy*wy)
                 end
-                -- Higher wpIndex = further along path; less remDist = further within segment.
                 local progress = e.wpIndex * 10000 - remDist
                 if progress > bestProgress then
                     best, bestProgress = e, progress
@@ -509,26 +500,24 @@ end
 
 function Tower:draw(selected)
     if selected then
-        love.graphics.setColor(1, 1, 1, 0.14)
+        love.graphics.setColor(1, 1, 1, 0.10)
         love.graphics.circle("fill", self.x, self.y, self.range)
-        love.graphics.setColor(1, 1, 1, 0.50)
+        love.graphics.setColor(1, 1, 1, 0.45)
         love.graphics.circle("line", self.x, self.y, self.range)
     end
 
-    local r, g, b = self.color[1], self.color[2], self.color[3]
-    if self.level == 2 then r,g,b = r*0.9+0.1, g*0.9+0.1, b*0.9+0.1 end
-    if self.level == 3 then r,g,b = math.min(r+0.25,1), math.min(g+0.15,1), math.min(b+0.05,1) end
-
-    love.graphics.setColor(r, g, b)
+    -- Tower body: white fill + black border
+    love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("fill", self.x-14, self.y-14, 28, 28, 4, 4)
-    love.graphics.setColor(0.08, 0.08, 0.08)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle("line", self.x-14, self.y-14, 28, 28, 4, 4)
 
+    -- Level indicator dots (white on black means they'll show as dots on the white body)
+    -- Use black dots on the white body
     if self.level > 1 then
-        local dotColor = self.level == 2 and {1,1,0.3} or {1,0.5,0}
-        love.graphics.setColor(dotColor)
+        love.graphics.setColor(0, 0, 0)
         for i = 1, self.level - 1 do
-            love.graphics.circle("fill", self.x - 8 + (i-1)*9, self.y + 10, 3)
+            love.graphics.circle("fill", self.x - 8 + (i-1)*9, self.y + 8, 3)
         end
     end
 
@@ -540,7 +529,7 @@ function Tower:draw(selected)
         -- Respawn indicator dots on tower
         for i, w in ipairs(self.warriors) do
             if w.state == "respawning" then
-                love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+                love.graphics.setColor(1, 1, 1, 0.40)
                 local angle = (i-1)*(2*math.pi/3)
                 love.graphics.circle("fill", self.x + math.cos(angle)*10, self.y + math.sin(angle)*10, 3)
             end

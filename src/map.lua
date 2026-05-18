@@ -8,8 +8,6 @@ function Map.new(levelData)
     self.tileSize = 48
     self.cols     = levelData.cols
     self.rows     = levelData.rows
-    self.tileGrass= levelData.tileGrass or {0.20, 0.50, 0.20}
-    self.tilePath = levelData.tilePath  or {0.70, 0.60, 0.42}
     return self
 end
 
@@ -20,11 +18,18 @@ function Map:draw()
             local x = (col - 1) * ts
             local y = (row - 1) * ts
             if self.layout[row][col] == 1 then
-                love.graphics.setColor(self.tileGrass)
+                love.graphics.setColor(0, 0, 0)
             else
-                love.graphics.setColor(self.tilePath)
+                love.graphics.setColor(1, 1, 1)
             end
-            love.graphics.rectangle("fill", x, y, ts - 1, ts - 1)
+            love.graphics.rectangle("fill", x, y, ts, ts)
+            -- Subtle grid line
+            if self.layout[row][col] == 1 then
+                love.graphics.setColor(1, 1, 1, 0.06)
+            else
+                love.graphics.setColor(0, 0, 0, 0.10)
+            end
+            love.graphics.rectangle("line", x, y, ts, ts)
         end
     end
 end
